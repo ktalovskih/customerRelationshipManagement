@@ -1,5 +1,6 @@
-#ifndef C5E36286_7F69_4C42_9A47_DEAA86B7E45B
-#define C5E36286_7F69_4C42_9A47_DEAA86B7E45B
+#ifndef __LOGINWINDOW_H__
+#define __LOGINWINDOW_H__
+
 #include <ui_loginWindow.h>
 #include <QMainWindow>
 #include <logicDb.h>
@@ -8,7 +9,7 @@
 class LoginWindow : public QWidget{
     Q_OBJECT
     LogicDataBase* db;   
-    std::unique_ptr<Ui::Form> ui; 
+    std::unique_ptr<Ui::LoginWindow> ui; 
 public:
     explicit LoginWindow(QWidget* parent = nullptr);
     ~LoginWindow();
@@ -19,4 +20,5 @@ private slots:
     
 };
 
-#endif /* C5E36286_7F69_4C42_9A47_DEAA86B7E45B */
+
+#endif // __LOGINWINDOW_H__

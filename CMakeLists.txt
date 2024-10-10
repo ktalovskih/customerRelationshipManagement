@@ -15,7 +15,7 @@ include_directories(src)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
 
-set(UI_FILES ui/mainWindow.ui ui/loginWindow.ui)
+set(UI_FILES ui/mainWindowAdmin.ui ui/loginWindow.ui ui/mainWindowOperator.ui)
 qt6_wrap_ui(UIHEADERS ${UI_FILES})
 
 

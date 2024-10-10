@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     lg.show();
     
     QObject::connect(&lg, &LoginWindow::loginSuccessful, [&](LogicDataBase* db){
-        MainWindow* w = new MainWindow(nullptr,db);
+        MainWindow* w = new MainWindow(nullptr,db,db->getRole() == "admin" ? true : false, db->getId());
         w->show();
     });
     

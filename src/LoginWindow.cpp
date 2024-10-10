@@ -1,7 +1,7 @@
 #include "LoginWindow.h"
 #include <QPushButton>
 #include <QMessageBox>
-LoginWindow::LoginWindow(QWidget* parent) : ui(std::make_unique<Ui::Form>()), db(new LogicDataBase){
+LoginWindow::LoginWindow(QWidget* parent) : ui(std::make_unique<Ui::LoginWindow>()), db(new LogicDataBase){
     ui->setupUi(this);
 
     QObject::connect(ui->pushButton,&QPushButton::pressed , this, &LoginWindow::attemptLogin);
