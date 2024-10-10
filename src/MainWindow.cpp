@@ -6,25 +6,51 @@
 #include <QTime>
 #include <QLabel>
 #include <QMessageBox>
-MainWindow::MainWindow(QWidget* parent, LogicDataBase* database)
-    : QMainWindow(parent), db(database), ui(new Ui::MainWindow)
-{
-    ui->setupUi(this);
+#include <QFileDialog>
+#include <QTextEdit>
+#include <QClipboard>
 
-    showAllShifts();
-    QObject::connect(ui->listWidget, &QListWidget::itemClicked, this, &MainWindow::onShiftSelected);
-    QObject::connect(ui->pushButton, &QPushButton::pressed, this, &MainWindow::addTask);
-    QObject::connect(ui->pushButton_2, &QPushButton::pressed, this, &MainWindow::editShift);
+MainWindow::MainWindow(QWidget *parent, LogicDataBase *database, bool isAdmin, int idUser)
+    : QMainWindow(parent), db(database), isAdmin(isAdmin), idUser(idUser), labelForImage(new QLabel())
+{
+    if (isAdmin)
+    {
+        uiAdmin = std::make_unique<Ui::mainWindowAdmin>();
+        uiAdmin->setupUi(this);
+        QObject::connect(uiAdmin->listWidget, &QListWidget::doubleClicked, this, &MainWindow::editShift);
+        QObject::connect(uiAdmin->pushButton, &QPushButton::pressed, this, &MainWindow::addTask);
+        showAllShifts();
+    }
+    else
+    {
+        uiOperator = std::make_unique<Ui::mainWindowOperator>();
+        uiOperator->setupUi(this);
+
+        QObject::connect(uiOperator->listWidget, &QListWidget::itemClicked, this, &MainWindow::onShiftSelected);
+        QObject::connect(uiOperator->listWidget_2, &QListWidget::itemClicked, this, &MainWindow::onShiftSelected);
+
+        QObject::connect(uiOperator->pushButton, &QPushButton::pressed, this, &MainWindow::startShift);
+        QObject::connect(uiOperator->pushButton_2, &QPushButton::pressed, this, &MainWindow::endShift);
+        QObject::connect(uiOperator->listWidget_2, &QListWidget::doubleClicked, this, &MainWindow::showWholeInformation);
+
+        showAllShifts();
+    }
 }
-MainWindow::~MainWindow(){
+
+MainWindow::~MainWindow()
+{
     delete db;
 };
-void MainWindow::onShiftSelected(QListWidgetItem *item) {
-    selectedShiftId = item->data(Qt::UserRole).toInt();  
+void MainWindow::onShiftSelected(QListWidgetItem *item)
+{
+    selectedShiftId = item->data(Qt::UserRole).toInt();
+    qDebug() << "Selected Shift ID:" << selectedShiftId;
 }
-void MainWindow::editShift() {
-    QListWidgetItem *selectedItem = ui->listWidget->currentItem();
-    if (!selectedItem) {
+void MainWindow::editShift()
+{
+    QListWidgetItem *selectedItem = uiAdmin->listWidget->currentItem();
+    if (!selectedItem)
+    {
         QMessageBox::warning(this, "No Selection", "Please select a shift to edit.");
         return;
     }
@@ -34,167 +60,386 @@ void MainWindow::editShift() {
     createShiftForm(shiftId);
 }
 
-void MainWindow::addTask(){
+void MainWindow::addTask()
+{
     createShiftForm(-1);
 }
-void MainWindow::createShiftForm(int indexOfShift){
-    
+
+void MainWindow::createShiftForm(int indexOfShift)
+{
     QSqlQueryModel *model1 = new QSqlQueryModel(this);
     QSqlQueryModel *model2 = new QSqlQueryModel(this);
 
-    QWidget* wigdet = new QWidget;
-    QHBoxLayout* layout = new QHBoxLayout;
-    auto* label3 = new QLineEdit();
+    QWidget *widget = new QWidget;
+    QHBoxLayout *layout = new QHBoxLayout;
 
-    auto* startTime = new QTimeEdit();
-    auto* endTime = new QTimeEdit();
-    startTime->setDisplayFormat("HH:mm");
-    endTime->setDisplayFormat("HH:mm");
+    auto *startTime = new QTimeEdit();
+    auto *endTime = new QTimeEdit();
     startTime->setTime(QTime::currentTime());
     endTime->setTime(QTime::currentTime());
 
-    auto button = new QPushButton("Create Shift");
+    startTime->setDisplayFormat("HH:mm");
+    endTime->setDisplayFormat("HH:mm");
+    auto *logs = new QLineEdit();
 
-    model1->setQuery("SELECT name FROM models");  
-    model2->setQuery("select name from users where role = 'operator'");
+    auto button = new QPushButton(indexOfShift == -1 ? "Create Shift" : "Edit Shift");
 
-    QComboBox *comboBoxModel = new QComboBox; 
-    QComboBox *comboBoxOperator = new QComboBox; 
+    model1->setQuery("SELECT name FROM models");
+    model2->setQuery("SELECT name FROM users WHERE role = 'operator'");
+
+    QComboBox *comboBoxModel = new QComboBox;
+    QComboBox *comboBoxOperator = new QComboBox;
 
     comboBoxModel->setModel(model1);
-    comboBoxModel->setModelColumn(0);  
+    comboBoxModel->setModelColumn(0);
 
     comboBoxOperator->setModel(model2);
     comboBoxOperator->setModelColumn(0);
 
     QCompleter *completer1 = new QCompleter(model1, this);
-    completer1->setCompletionColumn(0);  
-    completer1->setCompletionMode(QCompleter::PopupCompletion);  
-    completer1->setCaseSensitivity(Qt::CaseInsensitive);  
+    completer1->setCompletionColumn(0);
+    completer1->setCompletionMode(QCompleter::PopupCompletion);
+    completer1->setCaseSensitivity(Qt::CaseInsensitive);
 
     comboBoxModel->setCompleter(completer1);
 
-    //
     QCompleter *completer2 = new QCompleter(model2, this);
-    completer2->setCompletionColumn(0);  
-    completer2->setCompletionMode(QCompleter::PopupCompletion);  
-    completer2->setCaseSensitivity(Qt::CaseInsensitive);  
+    completer2->setCompletionColumn(0);
+    completer2->setCompletionMode(QCompleter::PopupCompletion);
+    completer2->setCaseSensitivity(Qt::CaseInsensitive);
 
-    comboBoxOperator->setCompleter(completer1);
-    //
+    comboBoxOperator->setCompleter(completer2);
 
     comboBoxModel->setEditable(true);
     comboBoxOperator->setEditable(true);
 
-    comboBoxOperator->setPlaceholderText("operator");
-    comboBoxModel->setPlaceholderText("model");
+    comboBoxOperator->setPlaceholderText("Select Operator");
+    comboBoxModel->setPlaceholderText("Select Model");
 
-LoginWindow::LoginWindow(QWidget* parent) : ui(std::make_unique<Ui::Form>()), db(new LogicDataBase){
-    ui->setupUi(this);
+    startTime->setKeyboardTracking(true);
+    endTime->setKeyboardTracking(true);
 
-    QObject::connect(ui->pushButton,&QPushButton::pressed , this, &LoginWindow::attemptLogin);
-}
+    if (indexOfShift != -1)
+    {
+        QSqlQuery query;
+        query.prepare("SELECT operator_id, model_id, start_time, end_time FROM shifts WHERE id = :id");
+        query.bindValue(":id", indexOfShift);
+        query.exec();
 
-LoginWindow::~LoginWindow(){
+        if (query.next())
+        {
+            int operatorId = query.value(0).toInt();
+            int modelId = query.value(1).toInt();
+            QTime start = QTime::fromString(query.value(2).toString(), "HH:mm");
+            QTime end = QTime::fromString(query.value(3).toString(), "HH:mm");
+            QString logsText = query.value(8).toString();
+            QSqlQuery operatorQuery;
+            operatorQuery.prepare("SELECT name FROM users WHERE id = :id");
+            operatorQuery.bindValue(":id", operatorId);
+            operatorQuery.exec();
+            QString operatorName;
+            if (operatorQuery.next())
+            {
+                operatorName = operatorQuery.value(0).toString();
+            }
 
-}
+            QSqlQuery modelQuery;
+            modelQuery.prepare("SELECT name FROM models WHERE id = :id");
+            modelQuery.bindValue(":id", modelId);
+            modelQuery.exec();
+            QString modelName;
+            if (modelQuery.next())
+            {
+                modelName = modelQuery.value(0).toString();
+            }
 
-void LoginWindow::attemptLogin() {
-    if (db->login(ui->lineEdit->text(), ui->lineEdit_2->text())) {
-        emit loginSuccessful(db);  
-        close(); 
-    } else {
-        QMessageBox::warning(this, "Login Failed", "Incorrect username or password.");
+            comboBoxOperator->setCurrentText(operatorName);
+            comboBoxModel->setCurrentText(modelName);
+            startTime->setTime(start);
+            endTime->setTime(end);
+            logs->setText(logsText);
+        }
     }
-}    endTime->setKeyboardTracking(true);
 
-    wigdet->setLayout(layout);
+    auto *deleteButton = new QPushButton("delete");
+    widget->setLayout(layout);
     layout->addWidget(comboBoxOperator);
     layout->addWidget(comboBoxModel);
     layout->addWidget(startTime);
     layout->addWidget(endTime);
+    layout->addWidget(logs);
     layout->addWidget(button);
-    wigdet->show();
-    
+    if (indexOfShift != -1)
+        layout->addWidget(deleteButton);
+    widget->show();
 
-
-    QObject::connect(button, &QPushButton::pressed, [=]() {
-        if (indexOfShift == -1){
-            comboBoxOperator->currentText();
-            db->addShift(comboBoxOperator->currentText(), comboBoxModel->currentText(),startTime->time(), endTime->time());
-        }
-        else{
-            QSqlQuery query;
-            
-            query.prepare("UPDATE shifts SET operator_id = :operatorId, model_id = :modelId, "
-              "start_time = :startTime, end_time = :endTime WHERE id = :id");
-            query.bindValue(":operator", comboBoxOperator->currentText());
-            query.bindValue(":model", comboBoxModel->currentText());
-            query.bindValue(":startTime", startTime->time());
-            query.bindValue(":endTime", endTime->time());
-            query.bindValue(":id", indexOfShift+1);
-            qDebug() << indexOfShift;
-            if (query.exec()) {
-                QMessageBox::information(this, "Shift Updated", "Shift has been successfully updated.");
-            } else {
-                QMessageBox::warning(this, "Error", "Failed to update shift: " + query.lastError().text());
-            }
-        }
-        ui->listWidget->clear();
+    QObject::connect(deleteButton, &QPushButton::clicked, [=]()
+                     {
+        db->deleteShift(indexOfShift);
+        uiAdmin->listWidget->clear();
         showAllShifts();
-        wigdet->deleteLater();
+        widget->deleteLater(); });
 
+    QObject::connect(button, &QPushButton::pressed, [=](){
+        QString operatorName = comboBoxOperator->currentText();
+        QString modelName = comboBoxModel->currentText();
+        QTime start = startTime->time();
+        QTime end = endTime->time();
+        QString logsText = logs->text();
+        if (indexOfShift == -1) {
+            qDebug() << indexOfShift;
+            db->addShift(operatorName, modelName, start, end, logsText);
+            QMessageBox::information(widget, "Shift Created", "Shift has been successfully created.");
+        } else {
+            db->updateShift(operatorName, modelName, start, end, logsText, indexOfShift);
+        }
+        uiAdmin->listWidget->clear();
+        showAllShifts();
+        widget->deleteLater(); 
     });
 }
 
-void MainWindow::showAllShifts(){
-    QSqlQuery query;
-    query.prepare("SELECT id, operator_id, model_id, start_time, end_time, total_hours, status FROM shifts");
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    qDebug() << "1";
+    if (event->matches(QKeySequence::Paste)) {
+        QClipboard *clipboard = QApplication::clipboard();
+        const QMimeData *mimeData = clipboard->mimeData();
 
-    if (!query.exec()) {
+        if (mimeData->hasImage()) {
+            QPixmap image = qvariant_cast<QPixmap>(mimeData->imageData());
+            labelForImage->setPixmap(image);
+            labelForImage->setScaledContents(true);
+            db->uploadImageToDB(image, "pasted_image.png");
+        } else if (mimeData->hasUrls()) {
+            QList<QUrl> urls = mimeData->urls();
+            foreach (const QUrl &url, urls) {
+                QString fileName = url.toLocalFile();
+                QPixmap image(fileName);
+                if (!image.isNull()) {
+                    labelForImage->setPixmap(image);
+                    labelForImage->setScaledContents(true);
+                    db->uploadImageToDB(image, fileName);
+                }
+            }
+        }
+    }
+}
+
+void MainWindow::endShift()
+{
+    
+    auto *label = new QLabel();
+
+    QSqlQuery query;
+    query.prepare("SELECT screenshot FROM shift_screenshots WHERE id = :id");
+    query.bindValue(":id", 1);
+
+    if (query.exec() && query.next())
+    {
+        QByteArray byteArray = query.value(0).toByteArray(); // Get the BLOB
+        QPixmap pixmap;
+        pixmap.loadFromData(byteArray); // Convert BLOB back to QPixmap
+
+        if (!pixmap.isNull())
+        {
+            label->setPixmap(pixmap.scaled(label->size(), Qt::KeepAspectRatio)); // Display the image
+        }
+        else
+        {
+            qDebug() << "Failed to load image from DB";
+        }
+    }
+    label->show();
+}
+
+void MainWindow::showWholeInformation()
+{
+    // Create a new widget and a layout for organizing the widget
+    auto *widget = new QWidget;
+    auto *layout = new QVBoxLayout(widget);
+    
+    // Create a QTextEdit to display the logs
+    auto *text = new QTextEdit(widget);
+    text->setReadOnly(true);  // Make it read-only to avoid accidental edits
+
+    // Execute the query to retrieve logs for the current user (operator)
+    QSqlQuery query;
+    query.prepare("SELECT logs FROM shifts WHERE operator_id = :id");  // Assuming 'shifts' is the correct table name
+    query.bindValue(":id", idUser);  // 'idUser' should be the operator's ID
+    query.exec();
+    if (!query.next())
+        qDebug() << query.lastError();
+    QString buffer;
+    while (query.next())
+    {
+        buffer += query.value(0).toString();  // Append each log entry
+        buffer += "\n";  // Separate logs with a newline for readability
+    }
+
+    text->setText(buffer);
+
+    layout->addWidget(text);
+    widget->setLayout(layout);
+
+    widget->setMinimumSize(600, 400);  
+    widget->setWindowTitle("Logs Information");
+
+    widget->setAttribute(Qt::WA_DeleteOnClose);
+
+    widget->show();
+}
+
+void MainWindow::startShift()
+{
+    auto* widget = new QWidget();
+    auto* buttonDialogFile = new QPushButton("Select File");
+    labelForImage = new QLabel();
+    auto *layout = new QVBoxLayout(widget);
+    auto* buttonUpload = new QPushButton("upload");
+
+    auto *logText = new QTextEdit();
+    logText->setReadOnly(true);
+    QSqlQuery logQuery;
+    logQuery.prepare("SELECT logs FROM shifts WHERE id = :id");
+    logQuery.bindValue(":id", selectedShiftId);
+    logQuery.exec();
+    QString buffer;
+    while (logQuery.next()) {
+        buffer += logQuery.value(0).toString();
+        buffer += "\n";
+    }
+    logText->setText(buffer);
+
+    QObject::connect(buttonDialogFile, &QPushButton::clicked, [=]() {
+    QFileDialog dialog;
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setNameFilter("Images (*.png *.jpg *.jpeg);;Text files (*.txt);;All files (*.*)");
+    dialog.setDirectory(QDir::homePath());
+    if (dialog.exec()) {
+        QStringList fileNames = dialog.selectedFiles();
+        foreach (const QString &fileName, fileNames) {
+            QPixmap image(fileName);
+            if (!image.isNull()) {  
+                labelForImage->setPixmap(image);
+                labelForImage->setScaledContents(true);  
+                db->uploadImageToDB(image, fileName);  
+            } else {
+                qDebug() << "Selected file is not an image.";
+            }
+        }
+    }
+});
+
+
+    QObject::connect(buttonUpload, &QPushButton::clicked, [=]() {
+        QSqlQuery query;
+        query.prepare("UPDATE shifts SET start_time = :start_time, status = 'в работе' WHERE id = :id");
+        query.bindValue(":id", selectedShiftId);
+        query.bindValue(":start_time", QTime::currentTime().toString("HH:mm"));
+        if (!query.exec()) {
+            QMessageBox::critical(this, "Error", "Something went wrong while starting the shift.");
+            return;
+        }
+        widget->deleteLater();
+        showAllShifts();
+    });
+
+
+
+    layout->addWidget(logText);
+    layout->addWidget(labelForImage);
+    layout->addWidget(buttonDialogFile);
+    layout->addWidget(buttonUpload);
+
+    widget->setLayout(layout);
+    widget->setMinimumSize(600, 400);
+    widget->setWindowTitle("Shift Logs and Image Upload");
+    widget->setAttribute(Qt::WA_DeleteOnClose);
+    widget->show();
+
+    
+   
+}
+
+
+void MainWindow::showAllShifts()
+{
+    QSqlQuery query;
+
+    if (!isAdmin)
+    {
+        query.prepare(R"(
+            SELECT shifts.id, users.name AS operator_name, models.name AS model_name, shifts.start_time, shifts.end_time, shifts.total_hours, shifts.status
+            FROM shifts
+            JOIN users ON shifts.operator_id = users.id
+            JOIN models ON shifts.model_id = models.id
+            WHERE shifts.operator_id = :idUser
+        )");
+        query.bindValue(":idUser", idUser);
+    }
+    else
+    {
+        query.prepare(R"(
+            SELECT shifts.id, users.name AS operator_name, models.name AS model_name, shifts.start_time, shifts.end_time, shifts.total_hours, shifts.status
+            FROM shifts
+            JOIN users ON shifts.operator_id = users.id
+            JOIN models ON shifts.model_id = models.id
+            )");
+    }
+
+    if (!query.exec())
+    {
         qDebug() << "Query execution error: " << query.lastError().text();
         return;
     }
+    if (!isAdmin)
+    {
+        uiOperator->listWidget_2->clear();
+        uiOperator->listWidget->clear();
 
-    ui->listWidget->clear();
+    }
+    else
+    {
+        uiAdmin->listWidget->clear();
+    }
+    while (query.next())
+    {
+        int id = query.value("id").toInt();
+        QString operatorName = query.value("operator_name").toString();
+        QString modelName = query.value("model_name").toString();
+        QString startTime = query.value("start_time").toString();
+        QString endTime = query.value("end_time").toString();
+        QString totalHours = query.value("total_hours").toString();
+        QString status = query.value("status").toString();
 
-    while (query.next()){
-        QString operatorId = [=](){
-            query.value("operator_id").toString(); 
-            QSqlQuery newQuery;
-            newQuery.prepare("select name from users where id = :_id");
-            newQuery.bindValue(":_id", query.value("operator_id").toString());
-            newQuery.exec();
-            newQuery.next();
-            return newQuery.value(0).toString();
-        }();
-        QString modelId = [=](){
-            query.value("operator_id").toString(); 
-            QSqlQuery newQuery;
-            newQuery.prepare("select name from models where id = :_id");
-            newQuery.bindValue(":_id", query.value("model_id").toString());
-            newQuery.exec();
-            newQuery.next();
-            return newQuery.value(0).toString();
-        }();
-        
-        QString startTime = query.value("start_time").toString(); 
-        QString endTime = query.value("end_time").toString(); // End Time
-        QString totalHours = query.value("total_hours").toString(); // Total Hours
-        QString status = query.value("status").toString(); // Status
+        QString buffer = QString("Operator: %1 | Model: %2 | Start: %3 | End: %4 | Hours: %5 | Status: %6")
+                             .arg(operatorName)
+                             .arg(modelName)
+                             .arg(startTime)
+                             .arg(endTime)
+                             .arg(totalHours.isEmpty() ? "N/A" : totalHours)
+                             .arg(status);
 
-        // Create a formatted string with labels
-        QString buffer = QString("Operator: %2 | Model: %3 | Start: %4 | End: %5 | Hours: %6 | Status: %7")
-                            
-                            .arg(operatorId)
-                            .arg(modelId)
-                            .arg(startTime)
-                            .arg(endTime)
-                            .arg(totalHours.isEmpty() ? "N/A" : totalHours) // Handling NULL values
-                            .arg(status);
+        qDebug() << "Adding item: " << id;
+        QListWidgetItem *item = new QListWidgetItem(buffer);
+        item->setData(Qt::UserRole, id);
 
-        qDebug() << "Adding item: " << buffer;
-        ui->listWidget->addItem(buffer);
+        if (!isAdmin)
+        {
+            if (status == "в работе")
+            {
+                uiOperator->listWidget->addItem(item);
+            }
+            else
+            {
+                uiOperator->listWidget_2->addItem(item);
+            }
+        }
+        else
+        {
+            uiAdmin->listWidget->addItem(item);
+        }
     }
 }
 
