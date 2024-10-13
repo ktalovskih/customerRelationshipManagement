@@ -17,7 +17,7 @@ public:
     QString getRole();
     bool login(const QString name,const QString password);
     int getId();
-    void uploadImageToDB(const QPixmap &pixmap, const QString &fileName);
+    void uploadImageToDB(const QPixmap &pixmap);
     void updateShift(const QString _operator, const QString _model,const QTime _timeStart,const QTime _timeEnd, const QString logs, int  indexOfShift);
 };
 

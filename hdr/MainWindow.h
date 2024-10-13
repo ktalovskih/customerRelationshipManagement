@@ -18,6 +18,8 @@ class MainWindow : public QMainWindow {
     bool isAdmin;
     int idUser;
     QLabel* labelForImage; 
+    QMap<QString, QImage> mapOfTheImages;
+
 
 public:
 

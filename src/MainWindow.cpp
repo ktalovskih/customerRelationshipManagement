@@ -9,7 +9,7 @@
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QClipboard>
-
+#include <set>
 MainWindow::MainWindow(QWidget *parent, LogicDataBase *database, bool isAdmin, int idUser)
     : QMainWindow(parent), db(database), isAdmin(isAdmin), idUser(idUser), labelForImage(new QLabel())
 {
@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent, LogicDataBase *database, bool isAdmin, i
         QObject::connect(uiOperator->pushButton, &QPushButton::pressed, this, &MainWindow::startShift);
         QObject::connect(uiOperator->pushButton_2, &QPushButton::pressed, this, &MainWindow::endShift);
         QObject::connect(uiOperator->listWidget_2, &QListWidget::doubleClicked, this, &MainWindow::showWholeInformation);
+        QObject::connect(uiOperator->listWidget, &QListWidget::doubleClicked, this, &MainWindow::showWholeInformation);
 
         showAllShifts();
     }
@@ -199,9 +200,8 @@ void MainWindow::createShiftForm(int indexOfShift)
     });
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void MainWindow::keyPressEvent(QKeyEvent *event) //not working
 {
-    qDebug() << "1";
     if (event->matches(QKeySequence::Paste)) {
         QClipboard *clipboard = QApplication::clipboard();
         const QMimeData *mimeData = clipboard->mimeData();
@@ -210,7 +210,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             QPixmap image = qvariant_cast<QPixmap>(mimeData->imageData());
             labelForImage->setPixmap(image);
             labelForImage->setScaledContents(true);
-            db->uploadImageToDB(image, "pasted_image.png");
+            db->uploadImageToDB(image);
         } else if (mimeData->hasUrls()) {
             QList<QUrl> urls = mimeData->urls();
             foreach (const QUrl &url, urls) {
@@ -219,14 +219,14 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                 if (!image.isNull()) {
                     labelForImage->setPixmap(image);
                     labelForImage->setScaledContents(true);
-                    db->uploadImageToDB(image, fileName);
+                    db->uploadImageToDB(image);
                 }
             }
         }
     }
 }
 
-void MainWindow::endShift()
+void MainWindow::endShift() 
 {
     
     auto *label = new QLabel();
@@ -255,26 +255,23 @@ void MainWindow::endShift()
 
 void MainWindow::showWholeInformation()
 {
-    // Create a new widget and a layout for organizing the widget
     auto *widget = new QWidget;
     auto *layout = new QVBoxLayout(widget);
     
-    // Create a QTextEdit to display the logs
     auto *text = new QTextEdit(widget);
-    text->setReadOnly(true);  // Make it read-only to avoid accidental edits
+    text->setReadOnly(true);  
 
-    // Execute the query to retrieve logs for the current user (operator)
     QSqlQuery query;
-    query.prepare("SELECT logs FROM shifts WHERE operator_id = :id");  // Assuming 'shifts' is the correct table name
-    query.bindValue(":id", idUser);  // 'idUser' should be the operator's ID
-    query.exec();
-    if (!query.next())
+    query.prepare("SELECT logs FROM shifts WHERE operator_id = :id and id = :id2");  
+    query.bindValue(":id", idUser);  
+    query.bindValue(":id2", selectedShiftId);  
+    if (!query.exec())
         qDebug() << query.lastError();
     QString buffer;
     while (query.next())
     {
-        buffer += query.value(0).toString();  // Append each log entry
-        buffer += "\n";  // Separate logs with a newline for readability
+        buffer += query.value(0).toString();  
+        buffer += "\n";  
     }
 
     text->setText(buffer);
@@ -283,7 +280,6 @@ void MainWindow::showWholeInformation()
     widget->setLayout(layout);
 
     widget->setMinimumSize(600, 400);  
-    widget->setWindowTitle("Logs Information");
 
     widget->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -292,47 +288,71 @@ void MainWindow::showWholeInformation()
 
 void MainWindow::startShift()
 {
+    
+    QSqlQuery query;
+    query.prepare("SELECT status FROM shifts WHERE id = :id");
+    query.bindValue(":id", selectedShiftId);
+
+    if (query.exec() && query.next()) {  
+        if (query.value(0).toString() == "в работе") {  
+            return;  
+        }
+    }
+
     auto* widget = new QWidget();
+    
     auto* buttonDialogFile = new QPushButton("Select File");
     labelForImage = new QLabel();
-    auto *layout = new QVBoxLayout(widget);
-    auto* buttonUpload = new QPushButton("upload");
+    auto* layout = new QVBoxLayout(widget);
+    auto* buttonUpload = new QPushButton("Upload");
 
-    auto *logText = new QTextEdit();
+    auto* logText = new QTextEdit();
     logText->setReadOnly(true);
     QSqlQuery logQuery;
     logQuery.prepare("SELECT logs FROM shifts WHERE id = :id");
     logQuery.bindValue(":id", selectedShiftId);
-    logQuery.exec();
-    QString buffer;
-    while (logQuery.next()) {
-        buffer += logQuery.value(0).toString();
-        buffer += "\n";
+    if (logQuery.exec()) {
+        QString buffer;
+        while (logQuery.next()) {
+            buffer += logQuery.value(0).toString();
+            buffer += "\n";
+        }
+        logText->setText(buffer);
+    } else {
+        qDebug() << "Failed to retrieve logs for shift ID:" << selectedShiftId;
     }
-    logText->setText(buffer);
 
-    QObject::connect(buttonDialogFile, &QPushButton::clicked, [=]() {
+    QObject::connect(buttonDialogFile, &QPushButton::clicked, [this]() {
     QFileDialog dialog;
+    
     dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setNameFilter("Images (*.png *.jpg *.jpeg);;Text files (*.txt);;All files (*.*)");
-    dialog.setDirectory(QDir::homePath());
+    
+    dialog.setNameFilter("Images (*.png *.jpg *.jpeg);;All files (*.*)");
+    
+    dialog.setDirectory(QDir::currentPath());
+
     if (dialog.exec()) {
-        QStringList fileNames = dialog.selectedFiles();
+        QStringList fileNames = dialog.selectedFiles();  
+        
         foreach (const QString &fileName, fileNames) {
-            QPixmap image(fileName);
-            if (!image.isNull()) {  
-                labelForImage->setPixmap(image);
-                labelForImage->setScaledContents(true);  
-                db->uploadImageToDB(image, fileName);  
-            } else {
-                qDebug() << "Selected file is not an image.";
+            if (!fileName.isEmpty()) {
+                QImage image(fileName);  
+
+                if (!image.isNull()) {
+                    labelForImage->setPixmap(QPixmap::fromImage(image));
+                    labelForImage->setScaledContents(true);
+
+                    mapOfTheImages.insert(fileName, image);
+                } else {
+                    qDebug() << "Failed to load image from file:" << fileName;
+                }
             }
         }
     }
 });
 
 
-    QObject::connect(buttonUpload, &QPushButton::clicked, [=]() {
+    QObject::connect(buttonUpload, &QPushButton::clicked, [this, widget]() {
         QSqlQuery query;
         query.prepare("UPDATE shifts SET start_time = :start_time, status = 'в работе' WHERE id = :id");
         query.bindValue(":id", selectedShiftId);
@@ -341,25 +361,29 @@ void MainWindow::startShift()
             QMessageBox::critical(this, "Error", "Something went wrong while starting the shift.");
             return;
         }
-        widget->deleteLater();
-        showAllShifts();
+
+        for (const auto& m : mapOfTheImages) {
+            db->uploadImageToDB(QPixmap::fromImage(m));
+        }
+        
+        widget->deleteLater();  
+        mapOfTheImages.clear();
+        showAllShifts();  
     });
-
-
 
     layout->addWidget(logText);
     layout->addWidget(labelForImage);
     layout->addWidget(buttonDialogFile);
     layout->addWidget(buttonUpload);
 
+    connect(widget, &QWidget::destroyed, [this]() {
+        mapOfTheImages.clear();  
+    });
+
     widget->setLayout(layout);
     widget->setMinimumSize(600, 400);
     widget->setWindowTitle("Shift Logs and Image Upload");
-    widget->setAttribute(Qt::WA_DeleteOnClose);
     widget->show();
-
-    
-   
 }
 
 
@@ -397,7 +421,6 @@ void MainWindow::showAllShifts()
     {
         uiOperator->listWidget_2->clear();
         uiOperator->listWidget->clear();
-
     }
     else
     {

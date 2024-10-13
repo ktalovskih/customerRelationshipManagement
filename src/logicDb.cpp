@@ -151,7 +151,7 @@ int LogicDataBase::getId()
 QString LogicDataBase::getRole(){
     return role;
 }
-void LogicDataBase::uploadImageToDB(const QPixmap &pixmap, const QString &fileName) {
+void LogicDataBase::uploadImageToDB(const QPixmap &pixmap) {
 
         QByteArray byteArray;
         QBuffer buffer(&byteArray);
