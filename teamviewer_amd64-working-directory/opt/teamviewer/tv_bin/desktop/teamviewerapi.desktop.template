@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=TeamViewer
-Exec=__TV_EXECUTABLE_PATH__ --url "%u"
-NoDisplay=true
-StartupNotify=false
-MimeType=x-scheme-handler/teamviewerapi;
