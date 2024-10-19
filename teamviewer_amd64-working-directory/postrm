@@ -1,0 +1,53 @@
+#!/bin/bash
+
+TV_PKGTYPE='DEB'
+TV_BASE_DIR='/opt/teamviewer'
+
+function MainDEB()
+{
+  local action="$1"
+  local oldver="$2"
+
+  [ "$action" = 'purge'  ] && Purge
+}
+
+function MainRPM()
+{
+  UpdateIconCache
+}
+
+function UpdateIconCache()
+{
+  local -r iconDir='/usr/share/icons/hicolor'
+
+  cmdExists gtk-update-icon-cache   && gtk-update-icon-cache $iconDir
+  cmdExists update-desktop-database && update-desktop-database
+}
+
+function Purge()
+{
+  RmPath "$TV_BASE_DIR"
+  RmPath '/etc/teamviewer'
+  RmPath '/var/log/teamviewer15'
+  RmPath '/usr/share/keyrings/teamviewer-keyring.gpg'
+  RmPath '/dev/teamviewer-input'
+}
+
+function RmPath()
+{
+  local path="$1"
+  [ -h "$path" ] && return 1
+  [ -d "$path" ] || return 0
+  rm -rf "$path"
+}
+
+function cmdExists()
+{
+  command -v "$1" >/dev/null 2>&1
+}
+
+
+[ "$TV_PKGTYPE" = 'DEB' ] && MainDEB "$@"
+[ "$TV_PKGTYPE" = 'RPM' ] && MainRPM "$@"
+
+true

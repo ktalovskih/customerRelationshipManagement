@@ -1,0 +1,8 @@
+pkgname = teamviewer
+pkgver = 15.58.4-1
+pkgdesc = Remote control and meeting solution. TeamViewer provides easy, fast and secure remote access and meeting solutions to Linux, Windows PCs, Apple PCs and various other platforms, including Android and iPhone. TeamViewer is free for personal use. You can use TeamViewer completely free of charge to access your private computers or to help your friends with their computer problems. This package contains Free Software components. For details, see /opt/teamviewer/doc/license_foss.txt
+url = http://www.teamviewer.com
+builddate = 1729104972
+packager = 
+arch = x86_64
+size = 336728239

@@ -1,0 +1,25 @@
+Package: teamviewer
+Maintainer: TeamViewer Germany GmbH <service@teamviewer.com>
+Homepage: http://www.teamviewer.com
+Version: 15.58.4
+Architecture: amd64
+Section: non-free/net
+Priority: optional
+Depends: libc6 (>= 2.17), libdbus-1-3, libexpat1, libfontconfig1, libfreetype6, libglib2.0-0, libgl1, libice6, libminizip1, libnspr4, libnss3, libsm6, libx11-6, libx11-xcb1, libxcb1, libxcb-glx0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-randr0, libxcb-render0, libxcb-render-util0, libxcb-shape0, libxcb-shm0, libxcb-sync1, libxcb-xfixes0, libxcb-xinerama0, libxcb-xkb1, libxcomposite1, libxcursor1, libxdamage1, libxext6, libxfixes3, libxi6, libxkbcommon0, libxkbcommon-x11-0, libxrandr2, libxrender1, libxss1, libxtst6, zlib1g, libpolkit-agent-1-0, policykit-1
+Recommends: ttf-liberation | fonts-liberation, xdg-utils
+Replaces: teamviewer5, teamviewer6, teamviewer7, teamviewer8, teamviewer9
+Conflicts: teamviewer5, teamviewer6, teamviewer7, teamviewer8, teamviewer9, teamviewer-host
+Installed-Size: 331048
+Description: Remote control and meeting solution.
+ TeamViewer provides easy, fast and secure remote access and meeting solutions
+ to Linux, Windows PCs, Apple PCs and various other platforms,
+ including Android and iPhone.
+ .
+ TeamViewer is free for personal use.
+ You can use TeamViewer completely free of charge to access your private
+ computers or to help your friends with their computer problems.
+ .
+ To buy a license for commercial use, please visit http://www.teamviewer.com
+ .
+ This package contains Free Software components.
+ For details, see /opt/teamviewer/doc/license_foss.txt

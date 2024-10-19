@@ -1,0 +1,39 @@
+#!/bin/bash
+# cf. pretrans (RPM)
+
+function RenameOldDirs()
+{
+  MoveDir    '/opt/teamviewer/config'   || return 1
+  MoveDir    '/opt/teamviewer/logfiles' || return 1
+  RemoveLink '/etc/teamviewer'          || return 1
+}
+
+function MoveDir()
+{
+  local name="$1"
+  local newName="$name.old"
+  local cntName="$newName"
+  local cnt=0
+
+  [ -h "$name" ] && return 0
+  [ -d "$name" ] || return 0
+
+  if [ -e "$newName" ]; then
+    while [ -e "$cntName" ] ; do
+      cntName="$newName$((++cnt))"
+    done
+    mv "$newName" "$cntName" || return 1
+  fi
+
+  mv "$name" "$newName" || return 1
+}
+
+function RemoveLink()
+{
+  local name="$1"
+  [ -h "$name" ] || return 0
+
+  rm "$name"
+}
+
+RenameOldDirs

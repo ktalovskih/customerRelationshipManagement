@@ -5,7 +5,7 @@ project(userLogin)
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_AUTOMOC ON)
-#set(CMAKE_AUTOUIC ON)
+
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 COMPONENTS Widgets Core Gui Sql REQUIRED)
@@ -21,9 +21,10 @@ qt6_wrap_ui(UIHEADERS ${UI_FILES})
 
 add_executable(userLogin
     src/main.cpp
-    src/logicDb.cpp
+    src/LogicDataBase.cpp
     src/MainWindow.cpp
     src/LoginWindow.cpp
+    src/StartEndWidget.cpp
     ${UI_FILES}
 )
 include_directories(${SODIUM_INCLUDE_DIRS})

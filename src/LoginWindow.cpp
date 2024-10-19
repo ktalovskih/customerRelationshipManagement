@@ -11,6 +11,13 @@ LoginWindow::~LoginWindow(){
 
 }
 
+void LoginWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter){
+        attemptLogin();
+    }
+}
+
 void LoginWindow::attemptLogin() {
     if (db->login(ui->lineEdit->text(), ui->lineEdit_2->text())) {
         emit loginSuccessful(db);  
