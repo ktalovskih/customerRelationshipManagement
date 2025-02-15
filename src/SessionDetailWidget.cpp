@@ -1,10 +1,10 @@
-#include "StartEndWidget.h"
+#include "SessionDetailWidget.h"
 
-StartEndWidget::StartEndWidget(QWidget* parent, int _selectedShiftId, LogicDataBase* _database, int _idUser) 
-    : QWidget(parent), 
-      db(_database),
-      idUser(_idUser),
-      selectedShiftId(_selectedShiftId), 
+SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId, CRMDatabaseManager* _database, int _employeeId) 
+    : QWidget(parent),
+      databaseManager(_database),
+      employeeId(_employeeId),
+      selectedSessionId(_selectedSessionId), 
       gridLayoutForImages(new QGridLayout()),
       buttonDialogFile(new QPushButton("Select File", this)),
       buttonUpload(new QPushButton("Upload", this)),
@@ -13,84 +13,75 @@ StartEndWidget::StartEndWidget(QWidget* parent, int _selectedShiftId, LogicDataB
       scrollArea(new QScrollArea(this)),
       timer(new QTimer(this)),
       information(new QLineEdit(this)),
-      totalMoney(new QLineEdit(this))
+      totalEarnings(new QLineEdit(this))
 {
     information->hide();
-    totalMoney->hide();
+    totalEarnings->hide();
+    
     QObject::connect(timer, &QTimer::timeout, [this]() {
-        QString text = "Сессия ";
-        text += QString::number(selectedShiftId);
-        text += " завершена";
+        QString text = "Session ";
+        text += QString::number(selectedSessionId);
+        text += " completed";
         QMessageBox::information(this, "Timer", text);
         timer->stop();
     });
-
+    
     this->setFocusPolicy(Qt::StrongFocus);
-    QSqlQuery logs = db->getLogs(0, selectedShiftId);
+    QSqlQuery logsQuery = databaseManager->getLogs(0, selectedSessionId);
     QString buffer;
-    while (logs.next()) {
-        buffer += logs.value(0).toString();  
+    while (logsQuery.next()) {
+        buffer += logsQuery.value(0).toString();  
         buffer += "\n";
     }
     logText->setReadOnly(true);
     logText->setText(buffer);
     
-
     QWidget* containerWidget = new QWidget(scrollArea);
     containerWidget->setLayout(gridLayoutForImages);
     scrollArea->setWidget(containerWidget);
     scrollArea->setWidgetResizable(true);
-
+    
     layout->addWidget(buttonDialogFile);
     layout->addWidget(scrollArea);
     layout->addWidget(buttonUpload);
     layout->addWidget(logText);
-
     this->setLayout(layout);
     this->resize(600,400);
-
-    QObject::connect(buttonDialogFile, &QPushButton::clicked, [this]()
-    {
+    
+    QObject::connect(buttonDialogFile, &QPushButton::clicked, [this]() {
         QFileDialog dialog;
         dialog.setFileMode(QFileDialog::ExistingFiles);
         dialog.setNameFilter("Images (*.png *.jpg *.jpeg);;All files (*.*)");
         dialog.setDirectory(QDir::currentPath());
-
+        
         if (dialog.exec()) {
             QStringList fileNames = dialog.selectedFiles();
             foreach (const QString &fileName, fileNames) {
                 if (!fileName.isEmpty()) {
                     QImage image(fileName);
                     if (!image.isNull()) {
-                        mapOfTheImages.insert(fileName, image);
+                        imageMap.insert(fileName, image);
                     }
                 }
             }
             showImages();
         }
     });
-
-    QObject::connect(buttonUpload, &QPushButton::clicked, [this]()
-    {
-        if (db->startShift(selectedShiftId))
-        {
-            for (const auto& m : mapOfTheImages) {
-                db->uploadImageToDB(QPixmap::fromImage(m), selectedShiftId, true);  
+    
+    QObject::connect(buttonUpload, &QPushButton::clicked, [this]() {
+        if (databaseManager->startShift(selectedSessionId)) {
+            for (const auto& m : imageMap) {
+                databaseManager->uploadImageToDB(QPixmap::fromImage(m), selectedSessionId, true);
             }
-
-            mapOfTheImages.clear();  
-
-            QMessageBox::information(this, "Success", "Shift started and images uploaded successfully.");
-            
-        }
-        else
-        {
-            QMessageBox::critical(this, "Error", "Something went wrong while starting the shift.");
+            imageMap.clear();
+            QMessageBox::information(this, "Success", "Session started and images uploaded successfully.");
+        } else {
+            QMessageBox::critical(this, "Error", "Something went wrong while starting the session.");
             return;
         }
         removeWidgetsFromLayout();
-        this->hide(); 
-        QSqlQuery query = db->getTimings(selectedShiftId);
+        this->hide();
+        QSqlQuery query = databaseManager->getTimings(selectedSessionId);
         QTime start_time = query.value("start_time").toTime();
         QTime end_time = query.value("end_time").toTime();
         int temp = start_time.msecsTo(end_time);
@@ -98,88 +89,71 @@ StartEndWidget::StartEndWidget(QWidget* parent, int _selectedShiftId, LogicDataB
         if (start_time < end_time){
             timer->start(temp);
         }
-        else{
-            
-        }
-        
-
     });
-
-
 }
 
-void StartEndWidget::endShift(int operatorId)
+void SessionDetailWidget::endSession(int employeeId)
 {
-    bool stoppedManually = false; 
-    layout->addWidget(totalMoney);   
-    layout->addWidget(information);  
+    bool stoppedManually = false;
+    layout->addWidget(totalEarnings);
+    layout->addWidget(information);
     information->show();
-    totalMoney->show();
-    totalMoney->setPlaceholderText("Введите общую сумму заработка");
-    this->show();  
-
+    totalEarnings->show();
+    totalEarnings->setPlaceholderText("Enter total earnings");
+    this->show();
+    
     if (timer->isActive()) {
         timer->stop();
         stoppedManually = true;
     }
-
+    
     disconnect(buttonUpload, nullptr, nullptr, nullptr);
-
-    QObject::connect(buttonUpload, &QPushButton::clicked, [this, operatorId, stoppedManually]()
-    {
+    
+    QObject::connect(buttonUpload, &QPushButton::clicked, [this, employeeId, stoppedManually]() {
         QString reportText = information->text();
-        QString totalEarnings = totalMoney->text();  
-        QTime startTime = db->getTime(operatorId);     
+        QString totalEarningsText = totalEarnings->text();
+        QTime startTime = databaseManager->getTime(employeeId);
         
-        if (db->createReport(selectedShiftId, operatorId, reportText, totalEarnings, stoppedManually, startTime))
-        {
-            int reportId = db->getReportId(selectedShiftId);
+        if (databaseManager->createReport(selectedSessionId, employeeId, reportText, totalEarningsText, stoppedManually, startTime)) {
+            int reportId = databaseManager->getReportId(selectedSessionId);
             if (reportId == -1) {
                 QMessageBox::critical(this, "Error", "Failed to retrieve a valid report ID.");
                 return;
             }
-            for (const auto& m : mapOfTheImages) {
+            for (const auto& m : imageMap) {
                 if (m.isNull()) {
                     continue;
                 }
-                db->uploadImageToDB(QPixmap::fromImage(m), reportId, false);  
+                databaseManager->uploadImageToDB(QPixmap::fromImage(m), reportId, false);
             }
-
-            mapOfTheImages.clear();  
-
-            QMessageBox::information(this, "Success", "Shift ended and images uploaded successfully.");
+            imageMap.clear();
+            QMessageBox::information(this, "Success", "Session ended and images uploaded successfully.");
             close();
-        }
-        else
-        {
-            QMessageBox::critical(this, "Error", "Something went wrong while ending the shift.");
+        } else {
+            QMessageBox::critical(this, "Error", "Something went wrong while ending the session.");
             return;
         }
     });
 }
 
-
-StartEndWidget::~StartEndWidget()
+SessionDetailWidget::~SessionDetailWidget()
 {
-
 }
 
-void StartEndWidget::showImages()
+void SessionDetailWidget::showImages()
 {
-    QLayoutItem *child;
+    QLayoutItem* child;
     while ((child = gridLayoutForImages->takeAt(0)) != nullptr) {
         delete child->widget();
         delete child;
     }
-
     int row = 0;
     int col = 0;
-    foreach (const QImage &image, mapOfTheImages) {
+    foreach (const QImage &image, imageMap) {
         if (!image.isNull()) {
-            QLabel *imageLabel = new QLabel(this);
+            QLabel* imageLabel = new QLabel(this);
             imageLabel->setPixmap(QPixmap::fromImage(image).scaled(100, 100, Qt::KeepAspectRatio));
             gridLayoutForImages->addWidget(imageLabel, row, col);
-
             col++;
             if (col >= 3) {
                 col = 0;
@@ -189,35 +163,33 @@ void StartEndWidget::showImages()
     }
 }
 
-void StartEndWidget::keyPressEvent(QKeyEvent *event)
+void SessionDetailWidget::keyPressEvent(QKeyEvent *event)
 {
     if (event->matches(QKeySequence::Paste)) {
-        QClipboard *clipboard = QApplication::clipboard();
-        const QMimeData *mimeData = clipboard->mimeData();
-
+        QClipboard* clipboard = QApplication::clipboard();
+        const QMimeData* mimeData = clipboard->mimeData();
         if (mimeData->hasImage()) {
             QPixmap pixmap = qvariant_cast<QPixmap>(mimeData->imageData());
             QImage image = pixmap.toImage();
             QString key = QString::number(QRandomGenerator::global()->bounded(0, 10000));
-            mapOfTheImages.insert(key, image);
+            imageMap.insert(key, image);
             showImages();
         }
     }
 }
 
-void StartEndWidget::removeWidgetsFromLayout()
+void SessionDetailWidget::removeWidgetsFromLayout()
 {
     QLayoutItem* item;
     while ((item = gridLayoutForImages->takeAt(0)) != nullptr)
     {
-        if (item->widget())
-        {
+        if (item->widget()) {
             QWidget* widget = item->widget();
             gridLayoutForImages->removeWidget(widget);
-            widget->deleteLater();  
+            widget->deleteLater();
         }
         delete item;
     }
 }
 
-#include <moc_StartEndWidget.cpp>
+#include <moc_SessionDetailWidget.cpp>

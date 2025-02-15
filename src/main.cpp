@@ -1,21 +1,19 @@
 #include <QPushButton>
 #include <QApplication>
 #include <iostream>
-#include "LoginWindow.h"
-#include "MainWindow.h"
-
-
+#include "EmployeeLoginForm.h"
+#include "DashboardWindow.h"
 
 int main(int argc, char *argv[])
 {
-    QRandomGenerator rand;
     QApplication a(argc, argv);
-    LoginWindow lg;
-    lg.show();
+    EmployeeLoginForm loginForm;
+    loginForm.show();
     a.setWindowIcon(QIcon("icon.png"));
-    QObject::connect(&lg, &LoginWindow::loginSuccessful, [&](LogicDataBase* db){
-        MainWindow* w = new MainWindow(nullptr,db,db->getRole() == "admin" ? true : false, db->getId());
-        w->show();
+    
+    QObject::connect(&loginForm, &EmployeeLoginForm::loginSuccessful, [&](CRMDatabaseManager* databaseManager) {
+        DashboardWindow* dashboard = new DashboardWindow(nullptr, databaseManager, databaseManager->getRole() == "admin", databaseManager->getEmployeeId());
+        dashboard->show();
     });
     
     return a.exec();
