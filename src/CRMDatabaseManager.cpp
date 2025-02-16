@@ -15,7 +15,7 @@
 CRMDatabaseManager::CRMDatabaseManager()
 {
     db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("test.db");
+    db.setDatabaseName("/home/zxc/xdxd/test.db");
     if (!db.open())
         qDebug() << "Database connection failed:" << db.lastError().text();
 

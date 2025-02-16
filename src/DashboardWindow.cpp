@@ -273,7 +273,7 @@ void DashboardWindow::showWholeInformation()
 
     auto *text = new QTextEdit(widget);
     text->setReadOnly(true);
-    QSqlQuery logQuery = databaseManager->getLogs(isAdmin, selectedSessionId);
+    QSqlQuery logQuery = databaseManager->fetchSessionNotes(isAdmin, selectedSessionId);
     QString buffer;
     while (logQuery.next()) {
         buffer += logQuery.value(0).toString();
@@ -346,10 +346,11 @@ void DashboardWindow::addNewUser()
 
         bool result;
         if (role == "model") {
-            result = databaseManager->addUser(username, QString(), role);
+            result = databaseManager->addEmployee(username, QString(), role);  
         } else {
-            result = databaseManager->addUser(username, password, role);
+            result = databaseManager->addEmployee(username, password, role);  
         }
+        
 
         if (result) {
             QMessageBox::information(widget, "Success", "User added successfully.");
@@ -358,6 +359,97 @@ void DashboardWindow::addNewUser()
             QMessageBox::critical(widget, "Error", "Failed to add user. Please try again.");
         }
     });
+}
+void DashboardWindow::showAllSessions()
+{
+    if (!isAdmin) {
+        uiOperator->listWidget_2->clear();
+        uiOperator->listWidget->clear();
+    } else {
+        uiAdmin->listWidget->clear();
+        uiAdmin->listWidget_2->clear();
+    }
+
+    QSqlQuery sessionQuery = databaseManager->fetchAllSessions(isAdmin, employeeId);
+
+    while (sessionQuery.next()) {
+        int id = sessionQuery.value("session_id").toInt();
+        QString employeeName = sessionQuery.value("employee_name").toString();
+        QString clientName = sessionQuery.value("client_name").toString();
+        QString startTime = sessionQuery.value("start_time").toString();
+        QString endTime = sessionQuery.value("end_time").toString();
+        QString totalHours = sessionQuery.value("total_hours").toString();
+        QString status = sessionQuery.value("session_status").toString();
+
+        QString buffer = QString("Employee: %1 | Client: %2 | Start: %3 | End: %4 | Hours: %5 | Status: %6")
+                             .arg(employeeName)
+                             .arg(clientName)
+                             .arg(startTime)
+                             .arg(endTime)
+                             .arg(totalHours.isEmpty() ? "N/A" : totalHours)
+                             .arg(status);
+
+        QPixmap map(16, 16);
+        QListWidget *targetListWidget = nullptr;
+
+        if (isAdmin) {
+            if (status == "Created") {
+                map.fill(Qt::red);
+                targetListWidget = uiAdmin->listWidget;
+            } else if (status == "Completed") {
+                map.fill(Qt::green);
+                targetListWidget = uiAdmin->listWidget;
+            } else {
+                map.fill(Qt::yellow);
+                targetListWidget = uiAdmin->listWidget;
+            }
+        } else {
+            if (status == "Created") {
+                map.fill(Qt::red);
+                targetListWidget = uiOperator->listWidget;
+            } else if (status == "Completed") {
+                map.fill(Qt::green);
+                targetListWidget = uiOperator->listWidget;
+            } else {
+                map.fill(Qt::yellow);
+                targetListWidget = uiOperator->listWidget_2;
+            }
+        }
+
+        QListWidgetItem *item = new QListWidgetItem(buffer);
+        item->setIcon(QIcon(map));
+        item->setData(Qt::UserRole, id);
+        if (targetListWidget) {
+            targetListWidget->addItem(item);
+        }
+    }
+
+    if (isAdmin) {
+        QSqlQuery reportQuery = databaseManager->fetchReports();
+        while (reportQuery.next()) {
+            int id = reportQuery.value("report_id").toInt();
+            int sessionId = reportQuery.value("session_id").toInt();
+            double earnings = reportQuery.value("total_earnings").toDouble();
+            QString uploadedAt = reportQuery.value("uploaded_at").toString();
+            QString employeeName = reportQuery.value("employee_name").toString();
+            QString clientName = reportQuery.value("client_name").toString();
+
+            QString reportBuffer = QString("Session: %1 | Earnings: %2 | Uploaded At: %3 | Employee: %4 | Client: %5")
+                                    .arg(sessionId)
+                                    .arg(earnings)
+                                    .arg(uploadedAt)
+                                    .arg(employeeName)
+                                    .arg(clientName);
+
+            QPixmap reportMap(16, 16);
+            reportMap.fill(Qt::blue);
+
+            QListWidgetItem *reportItem = new QListWidgetItem(reportBuffer);
+            reportItem->setIcon(QIcon(reportMap));
+            reportItem->setData(Qt::UserRole, id);
+            uiAdmin->listWidget_2->addItem(reportItem);
+        }
+    }
 }
 
 #include <moc_DashboardWindow.cpp>

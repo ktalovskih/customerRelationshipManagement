@@ -27,7 +27,8 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
     });
     
     this->setFocusPolicy(Qt::StrongFocus);
-    QSqlQuery logsQuery = databaseManager->getLogs(0, selectedSessionId);
+    // Replace getLogs with fetchSessionNotes
+    QSqlQuery logsQuery = databaseManager->fetchSessionNotes(0, selectedSessionId);
     QString buffer;
     while (logsQuery.next()) {
         buffer += logsQuery.value(0).toString();  
@@ -69,9 +70,11 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
     });
     
     QObject::connect(buttonUpload, &QPushButton::clicked, [this]() {
-        if (databaseManager->startShift(selectedSessionId)) {
+        // Replace startShift with startSession
+        if (databaseManager->startSession(selectedSessionId)) {
+            // Replace uploadImageToDB with uploadDocumentToDB
             for (const auto& m : imageMap) {
-                databaseManager->uploadImageToDB(QPixmap::fromImage(m), selectedSessionId, true);
+                databaseManager->uploadDocumentToDB(QPixmap::fromImage(m), selectedSessionId, true);  
             }
             imageMap.clear();
             QMessageBox::information(this, "Success", "Session started and images uploaded successfully.");
@@ -81,12 +84,13 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
         }
         removeWidgetsFromLayout();
         this->hide();
-        QSqlQuery query = databaseManager->getTimings(selectedSessionId);
+        // Replace getTimings with fetchSessionTimings
+        QSqlQuery query = databaseManager->fetchSessionTimings(selectedSessionId);
         QTime start_time = query.value("start_time").toTime();
         QTime end_time = query.value("end_time").toTime();
         int temp = start_time.msecsTo(end_time);
         qDebug() << temp;
-        if (start_time < end_time){
+        if (start_time < end_time) {
             timer->start(temp);
         }
     });
@@ -94,14 +98,14 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
 
 void SessionDetailWidget::endSession(int employeeId)
 {
-    bool stoppedManually = false;
-    layout->addWidget(totalEarnings);
-    layout->addWidget(information);
+    bool stoppedManually = false; 
+    layout->addWidget(totalEarnings);   
+    layout->addWidget(information);  
     information->show();
     totalEarnings->show();
     totalEarnings->setPlaceholderText("Enter total earnings");
-    this->show();
-    
+    this->show();  
+
     if (timer->isActive()) {
         timer->stop();
         stoppedManually = true;
@@ -111,11 +115,13 @@ void SessionDetailWidget::endSession(int employeeId)
     
     QObject::connect(buttonUpload, &QPushButton::clicked, [this, employeeId, stoppedManually]() {
         QString reportText = information->text();
-        QString totalEarningsText = totalEarnings->text();
-        QTime startTime = databaseManager->getTime(employeeId);
+        QString totalEarningsText = totalEarnings->text();  
+        // Replace getTime with getSessionStartTime and pass selectedSessionId
+        QTime startTime = databaseManager->getSessionStartTime(selectedSessionId);     
         
         if (databaseManager->createReport(selectedSessionId, employeeId, reportText, totalEarningsText, stoppedManually, startTime)) {
-            int reportId = databaseManager->getReportId(selectedSessionId);
+            // Replace getReportId with getReportIdForSession
+            int reportId = databaseManager->getReportIdForSession(selectedSessionId);
             if (reportId == -1) {
                 QMessageBox::critical(this, "Error", "Failed to retrieve a valid report ID.");
                 return;
@@ -124,7 +130,8 @@ void SessionDetailWidget::endSession(int employeeId)
                 if (m.isNull()) {
                     continue;
                 }
-                databaseManager->uploadImageToDB(QPixmap::fromImage(m), reportId, false);
+                // Replace uploadImageToDB with uploadDocumentToDB
+                databaseManager->uploadDocumentToDB(QPixmap::fromImage(m), reportId, false);  
             }
             imageMap.clear();
             QMessageBox::information(this, "Success", "Session ended and images uploaded successfully.");
@@ -186,7 +193,7 @@ void SessionDetailWidget::removeWidgetsFromLayout()
         if (item->widget()) {
             QWidget* widget = item->widget();
             gridLayoutForImages->removeWidget(widget);
-            widget->deleteLater();
+            widget->deleteLater();  
         }
         delete item;
     }
