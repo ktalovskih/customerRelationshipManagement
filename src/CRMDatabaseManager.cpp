@@ -15,7 +15,7 @@
 CRMDatabaseManager::CRMDatabaseManager()
 {
     db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("/home/zxc/xdxd/test.db");
+    db.setDatabaseName("/home/zxc/xdxd/crm.db");
     if (!db.open())
         qDebug() << "Database connection failed:" << db.lastError().text();
 
@@ -58,8 +58,11 @@ bool CRMDatabaseManager::login(const QString& username, const QString& password)
     QSqlQuery query;
     query.prepare("SELECT employee_id, username, hashed_password FROM employees WHERE username = :username");
     query.bindValue(":username", username);
-    query.exec();
-
+    
+    if (!query.exec())
+    {
+        qDebug() << "Failed to delete session:" << query.lastError().text();
+    }
     while (query.next())
     {
         QString hashedPassword = query.value("hashed_password").toString();
@@ -67,8 +70,11 @@ bool CRMDatabaseManager::login(const QString& username, const QString& password)
         {
             role = username;
             employeeId = query.value("employee_id").toInt();
+            qDebug() << hashedPassword;
             return true;
         }
+        qDebug() << hashedPassword;
+
     }
     return false;
 }

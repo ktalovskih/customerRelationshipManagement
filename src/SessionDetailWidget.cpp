@@ -27,7 +27,6 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
     });
     
     this->setFocusPolicy(Qt::StrongFocus);
-    // Replace getLogs with fetchSessionNotes
     QSqlQuery logsQuery = databaseManager->fetchSessionNotes(0, selectedSessionId);
     QString buffer;
     while (logsQuery.next()) {
