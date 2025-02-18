@@ -16,36 +16,12 @@ CRMDatabaseManager::CRMDatabaseManager()
 {
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("/home/zxc/xdxd/crm.db");
+
     if (!db.open())
         qDebug() << "Database connection failed:" << db.lastError().text();
-
-    QSqlQuery query;
-    if (!query.exec("CREATE TABLE IF NOT EXISTS work_sessions (session_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    "employee_id INTEGER, client_id INTEGER, start_time TEXT, end_time TEXT, total_hours REAL, session_status TEXT, session_notes TEXT)"))
-    {
-        qDebug() << "Error creating work_sessions:" << query.lastError();
-    }
-    if (!query.exec("CREATE TABLE IF NOT EXISTS employees (employee_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    "full_name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, hashed_password TEXT NOT NULL, role TEXT NOT NULL)"))
-    {
-        qDebug() << "Error creating employees:" << query.lastError();
-    }
-    if (!query.exec("CREATE TABLE IF NOT EXISTS clients (client_id INTEGER PRIMARY KEY AUTOINCREMENT, full_name TEXT NOT NULL)"))
-    {
-        qDebug() << "Error creating clients:" << query.lastError();
-    }
-    if (!query.exec("CREATE TABLE IF NOT EXISTS session_documents (document_id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER, document BLOB, uploaded_at DATETIME)"))
-    {
-        qDebug() << "Error creating session_documents:" << query.lastError();
-    }
-    if (!query.exec("CREATE TABLE IF NOT EXISTS report_documents (document_id INTEGER PRIMARY KEY AUTOINCREMENT, report_id INTEGER, document BLOB, uploaded_at DATETIME)"))
-    {
-        qDebug() << "Error creating report_documents:" << query.lastError();
-    }
-    if (!query.exec("CREATE TABLE IF NOT EXISTS reports (report_id INTEGER PRIMARY KEY AUTOINCREMENT, session_id INTEGER, employee_id INTEGER, report TEXT, total_earnings REAL, uploaded_at DATETIME, worked_hours REAL, manually_stopped INTEGER)"))
-    {
-        qDebug() << "Error creating reports:" << query.lastError();
-    }
+    QSqlQuery query("create table sosal");
+    query.exec();
+    
 }
 
 CRMDatabaseManager::~CRMDatabaseManager()
@@ -55,29 +31,39 @@ CRMDatabaseManager::~CRMDatabaseManager()
 
 bool CRMDatabaseManager::login(const QString& username, const QString& password)
 {
+    if (!db.isOpen()) {
+        qDebug() << "Database is not open!";
+        return false;
+    }
+
     QSqlQuery query;
     query.prepare("SELECT employee_id, username, hashed_password FROM employees WHERE username = :username");
     query.bindValue(":username", username);
-    
-    if (!query.exec())
+
+    if (!query.exec()) 
     {
-        qDebug() << "Failed to delete session:" << query.lastError().text();
+        qDebug() << "Query Execution Error: " << query.lastError().text();
+        return false;
     }
-    while (query.next())
-    {
+
+    qDebug() << "Query Executed Successfully! Searching for user: " << username;
+
+    while (query.next()) {
         QString hashedPassword = query.value("hashed_password").toString();
-        if (password == hashedPassword)
-        {
+        qDebug() << "Retrieved user: " << query.value("username").toString() << " with password: " << hashedPassword;
+
+        if (password == hashedPassword) {
             role = username;
             employeeId = query.value("employee_id").toInt();
-            qDebug() << hashedPassword;
+            qDebug() << "Login Successful!";
             return true;
         }
-        qDebug() << hashedPassword;
-
     }
+
+    qDebug() << "User not found or password incorrect.";
     return false;
 }
+
 
 void CRMDatabaseManager::createSessionRecord(const QString& employeeName, const QString& clientName, const QTime startTime, const QTime endTime, const QString& notes)
 {

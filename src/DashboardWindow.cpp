@@ -214,7 +214,7 @@ void DashboardWindow::createSessionForm(int indexOfSession)
 
 void DashboardWindow::showReport()
 {
-    // Placeholder for showReport functionality
+    
 }
 
 void DashboardWindow::showWholeInformation()
@@ -302,7 +302,7 @@ void DashboardWindow::addNewUser()
 
     auto *labelRole = new QLabel("Role:", widget);
     auto *comboBoxRoles = new QComboBox(widget);
-    comboBoxRoles->addItems({"admin", "operator", "model"});
+    comboBoxRoles->addItems({"admin", "employee", "client"});
 
     auto *buttonOk = new QPushButton("OK", widget);
 

@@ -16,6 +16,7 @@ void EmployeeLoginForm::keyPressEvent(QKeyEvent *event) {
 }
 
 void EmployeeLoginForm::attemptLogin() {
+    
     if (databaseManager->login(ui->lineEdit->text(), ui->lineEdit_2->text())) {
         emit loginSuccessful(databaseManager);
         close();
