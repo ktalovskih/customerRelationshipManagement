@@ -58,7 +58,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Создать сессию</string>
+           <string>Create a shift</string>
           </property>
          </widget>
         </item>
@@ -71,7 +71,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Добавить роль</string>
+           <string>Create a new user</string>
           </property>
          </widget>
         </item>
@@ -84,7 +84,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Обновление </string>
+           <string>Update </string>
           </property>
          </widget>
         </item>
@@ -97,7 +97,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Удаление</string>
+           <string>Delete</string>
           </property>
          </widget>
         </item>
@@ -120,7 +120,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Сессии</string>
+           <string>Shifts</string>
           </property>
          </widget>
         </item>
@@ -157,7 +157,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Репорты</string>
+             <string>Reports</string>
             </property>
            </widget>
           </item>

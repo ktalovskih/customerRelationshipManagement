@@ -69,9 +69,7 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
     });
     
     QObject::connect(buttonUpload, &QPushButton::clicked, [this]() {
-        // Replace startShift with startSession
         if (databaseManager->startSession(selectedSessionId)) {
-            // Replace uploadImageToDB with uploadDocumentToDB
             for (const auto& m : imageMap) {
                 databaseManager->uploadDocumentToDB(QPixmap::fromImage(m), selectedSessionId, true);  
             }
@@ -83,7 +81,6 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
         }
         removeWidgetsFromLayout();
         this->hide();
-        // Replace getTimings with fetchSessionTimings
         QSqlQuery query = databaseManager->fetchSessionTimings(selectedSessionId);
         QTime start_time = query.value("start_time").toTime();
         QTime end_time = query.value("end_time").toTime();
@@ -115,11 +112,9 @@ void SessionDetailWidget::endSession(int employeeId)
     QObject::connect(buttonUpload, &QPushButton::clicked, [this, employeeId, stoppedManually]() {
         QString reportText = information->text();
         QString totalEarningsText = totalEarnings->text();  
-        // Replace getTime with getSessionStartTime and pass selectedSessionId
         QTime startTime = databaseManager->getSessionStartTime(selectedSessionId);     
         
         if (databaseManager->createReport(selectedSessionId, employeeId, reportText, totalEarningsText, stoppedManually, startTime)) {
-            // Replace getReportId with getReportIdForSession
             int reportId = databaseManager->getReportIdForSession(selectedSessionId);
             if (reportId == -1) {
                 QMessageBox::critical(this, "Error", "Failed to retrieve a valid report ID.");
@@ -129,7 +124,6 @@ void SessionDetailWidget::endSession(int employeeId)
                 if (m.isNull()) {
                     continue;
                 }
-                // Replace uploadImageToDB with uploadDocumentToDB
                 databaseManager->uploadDocumentToDB(QPixmap::fromImage(m), reportId, false);  
             }
             imageMap.clear();

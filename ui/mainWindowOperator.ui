@@ -55,7 +55,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Сессии</string>
+           <string>Shift</string>
           </property>
          </widget>
         </item>
@@ -92,7 +92,7 @@
              </sizepolicy>
             </property>
             <property name="text">
-             <string>Активные Сессии</string>
+             <string>Active shifts</string>
             </property>
            </widget>
           </item>
@@ -133,7 +133,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Начать Сессию</string>
+           <string>Start the session</string>
           </property>
          </widget>
         </item>
@@ -152,7 +152,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Завершить</string>
+           <string>Finish</string>
           </property>
          </widget>
         </item>
@@ -165,7 +165,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Обновление</string>
+           <string>Update</string>
           </property>
          </widget>
         </item>

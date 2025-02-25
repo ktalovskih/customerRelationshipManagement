@@ -32,6 +32,7 @@ DashboardWindow::DashboardWindow(QWidget *parent, CRMDatabaseManager *database, 
     {
         uiAdmin = std::make_unique<Ui::mainWindowAdmin>();
         uiAdmin->setupUi(this);
+        showAllSessions();
         QObject::connect(uiAdmin->pushButton, &QPushButton::pressed, this, &DashboardWindow::addTask);
 
         QObject::connect(uiAdmin->listWidget, &QListWidget::itemClicked, this, &DashboardWindow::onSessionSelected);
