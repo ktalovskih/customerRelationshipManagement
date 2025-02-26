@@ -16,13 +16,26 @@ void EmployeeLoginForm::keyPressEvent(QKeyEvent *event) {
 }
 
 void EmployeeLoginForm::attemptLogin() {
-    
-    if (databaseManager->login(ui->lineEdit->text(), ui->lineEdit_2->text())) {
+    QString username = ui->lineEdit->text();
+    QString password = ui->lineEdit_2->text();
+
+    if (databaseManager->login(username, password)) {
         emit loginSuccessful(databaseManager);
         close();
     } else {
         QMessageBox::warning(this, "Login Failed", "Incorrect username or password.");
     }
 }
+
+// std::string hashPassword(const std::string &password) {
+//     char hashedPassword[crypto_pwhash_STRBYTES];
+
+//     if (crypto_pwhash_str(hashedPassword, password.c_str(), password.length(),
+//                           crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
+//         throw std::runtime_error("Password hashing failed");
+//     }
+
+//     return std::string(hashedPassword);
+// }
 
 #include <moc_EmployeeLoginForm.cpp>

@@ -3,6 +3,7 @@
 
 #include <QtSql>
 #include <QString>
+#include <sodium.h>
 #pragma once
 
 class CRMDatabaseManager {
@@ -32,7 +33,7 @@ public:
     
     int getReportIdForSession(int sessionId);
     
-    bool login(const QString& username, const QString& password);
+    bool login(const QString &username, const QString &password);
     void createSessionRecord(const QString& employeeName, const QString& clientName, const QTime startTime, const QTime endTime, const QString& notes);
     void deleteSessionRecord(int sessionId);
     void uploadDocumentToDB(const QPixmap& pixmap, int index, bool isSessionDocument);

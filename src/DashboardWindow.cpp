@@ -185,7 +185,7 @@ void DashboardWindow::createSessionForm(int indexOfSession)
     layout->setRowStretch(3, 1);
     layout->addWidget(button, 4, 0, 1, 2);
     if (indexOfSession != -1)
-         layout->addWidget(deleteButton, 5, 0, 1, 2);
+        layout->addWidget(deleteButton, 5, 0, 1, 2);
     widget->show();
 
     QObject::connect(deleteButton, &QPushButton::clicked, [=]() {

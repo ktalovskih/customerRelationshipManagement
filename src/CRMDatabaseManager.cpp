@@ -11,7 +11,7 @@
 #include <QSqlError>
 #include <QDebug>
 
-// Constructor: sets up the database and creates necessary tables.
+
 CRMDatabaseManager::CRMDatabaseManager()
 {
     db = QSqlDatabase::addDatabase("QSQLITE");
@@ -19,9 +19,6 @@ CRMDatabaseManager::CRMDatabaseManager()
 
     if (!db.open())
         qDebug() << "Database connection failed:" << db.lastError().text();
-    QSqlQuery query("create table sosal");
-    query.exec();
-    
 }
 
 CRMDatabaseManager::~CRMDatabaseManager()
@@ -29,40 +26,24 @@ CRMDatabaseManager::~CRMDatabaseManager()
     db.close();
 }
 
-bool CRMDatabaseManager::login(const QString& username, const QString& password)
-{
-    if (!db.isOpen()) {
-        qDebug() << "Database is not open!";
-        return false;
-    }
-
+bool CRMDatabaseManager::login(const QString &username, const QString &password) {
     QSqlQuery query;
-    query.prepare("SELECT employee_id, username, hashed_password FROM employees WHERE username = :username");
+    query.prepare("SELECT password FROM employees WHERE username = :username");
     query.bindValue(":username", username);
-
-    if (!query.exec()) 
-    {
-        qDebug() << "Query Execution Error: " << query.lastError().text();
-        return false;
+    
+    if (!query.exec() || !query.next()) {
+        return false;  // User not found
     }
 
-    qDebug() << "Query Executed Successfully! Searching for user: " << username;
+    std::string storedHash = query.value(0).toString().toStdString();
 
-    while (query.next()) {
-        QString hashedPassword = query.value("hashed_password").toString();
-        qDebug() << "Retrieved user: " << query.value("username").toString() << " with password: " << hashedPassword;
-
-        if (password == hashedPassword) {
-            role = username;
-            employeeId = query.value("employee_id").toInt();
-            qDebug() << "Login Successful!";
-            return true;
-        }
+    if (crypto_pwhash_str_verify(storedHash.c_str(), password.toStdString().c_str(), password.length()) == 0) {
+        return true;  
     }
 
-    qDebug() << "User not found or password incorrect.";
-    return false;
+    return false;  // Incorrect password
 }
+
 
 
 void CRMDatabaseManager::createSessionRecord(const QString& employeeName, const QString& clientName, const QTime startTime, const QTime endTime, const QString& notes)
