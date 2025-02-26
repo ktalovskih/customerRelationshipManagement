@@ -27,15 +27,5 @@ void EmployeeLoginForm::attemptLogin() {
     }
 }
 
-// std::string hashPassword(const std::string &password) {
-//     char hashedPassword[crypto_pwhash_STRBYTES];
-
-//     if (crypto_pwhash_str(hashedPassword, password.c_str(), password.length(),
-//                           crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
-//         throw std::runtime_error("Password hashing failed");
-//     }
-
-//     return std::string(hashedPassword);
-// }
 
 #include <moc_EmployeeLoginForm.cpp>

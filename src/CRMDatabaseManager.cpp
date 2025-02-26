@@ -28,20 +28,38 @@ CRMDatabaseManager::~CRMDatabaseManager()
 
 bool CRMDatabaseManager::login(const QString &username, const QString &password) {
     QSqlQuery query;
-    query.prepare("SELECT password FROM employees WHERE username = :username");
+    query.prepare("SELECT hashed_password FROM employees WHERE username = :username");
     query.bindValue(":username", username);
     
     if (!query.exec() || !query.next()) {
-        return false;  // User not found
+        return false;  
     }
 
     std::string storedHash = query.value(0).toString().toStdString();
 
     if (crypto_pwhash_str_verify(storedHash.c_str(), password.toStdString().c_str(), password.length()) == 0) {
+        role = [&](){
+            QSqlQuery query;
+            query.prepare("SELECT role from employees WHERE username = :username");
+            query.bindValue(":username", username);
+            if (!query.exec() || !query.next()) {
+                qDebug() << "!"; 
+            }
+            return query.value(0).toString();
+        }();
+        employeeId = [&](){
+            QSqlQuery query;
+            query.prepare("SELECT employee_id from employees WHERE username = :username");
+            query.bindValue(":username", username);
+            if (!query.exec() || !query.next()) {
+                qDebug() << "!"; 
+            }
+            return query.value(0).toInt();
+        }();
         return true;  
     }
 
-    return false;  // Incorrect password
+    return false;  
 }
 
 
@@ -199,6 +217,7 @@ QSqlQuery CRMDatabaseManager::fetchAllSessions(bool isAdmin, int userId) {
             WHERE work_sessions.employee_id = :idUser
         )");
         query.bindValue(":idUser", userId);
+        qDebug() << "id" << userId;
     }
     if (!query.exec())
         qDebug() << "Query execution error:" << query.lastError().text();
@@ -405,7 +424,7 @@ void CRMDatabaseManager::updateSessionRecord(const QString& employeeName, const 
 
 bool CRMDatabaseManager::addEmployee(const QString &username, const QString &password, const QString &role) {
     QSqlQuery query;
-    if (role == "model") {
+    if (role == "client") {
         query.prepare("INSERT INTO clients (full_name) VALUES (:username)");
         query.bindValue(":username", username);
         if (!query.exec()) {
@@ -419,7 +438,18 @@ bool CRMDatabaseManager::addEmployee(const QString &username, const QString &pas
         query.prepare("INSERT INTO employees (full_name, username, hashed_password, role) VALUES (:full_name, :username, :hashed_password, :role)");
         query.bindValue(":full_name", username);
         query.bindValue(":username", username);
-        query.bindValue(":hashed_password", password);
+        query.bindValue(":hashed_password", ([&](){
+            char hashedPassword[crypto_pwhash_STRBYTES];
+            QByteArray passwordBytes = password.toUtf8();
+        
+            if (crypto_pwhash_str(hashedPassword, passwordBytes.constData(), passwordBytes.size(),
+                                  crypto_pwhash_OPSLIMIT_INTERACTIVE, 
+                                  crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
+                throw std::runtime_error("Password hashing failed");
+            }
+            return QString::fromStdString(std::string(hashedPassword));
+        })());
+               
         query.bindValue(":role", role);
         if (!query.exec()) {
             qDebug() << query.lastError();
@@ -428,6 +458,18 @@ bool CRMDatabaseManager::addEmployee(const QString &username, const QString &pas
             return true;
         }
     }
+}
+
+std::string hashPassword(const std::string &password) {
+    char hashedPassword[crypto_pwhash_STRBYTES];
+
+    if (crypto_pwhash_str(hashedPassword, password.c_str(), password.length(),
+                          crypto_pwhash_OPSLIMIT_INTERACTIVE, 
+                          crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0) {
+        throw std::runtime_error("Password hashing failed");
+    }
+
+    return std::string(hashedPassword);
 }
 
 bool CRMDatabaseManager::deleteCompletedSessionsAndReorder() {

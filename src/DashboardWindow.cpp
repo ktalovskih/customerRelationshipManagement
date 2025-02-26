@@ -361,6 +361,7 @@ void DashboardWindow::addNewUser()
         }
     });
 }
+
 void DashboardWindow::showAllSessions()
 {
     if (!isAdmin) {

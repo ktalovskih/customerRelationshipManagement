@@ -16,7 +16,6 @@ public:
     explicit EmployeeLoginForm(QWidget* parent = nullptr);
     ~EmployeeLoginForm();
     void keyPressEvent(QKeyEvent *event) override;
-    std::string hashPassword(const std::string &password);
 signals:
     void loginSuccessful(CRMDatabaseManager* databaseManager);
 private slots:
