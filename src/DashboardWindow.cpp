@@ -235,7 +235,7 @@ void DashboardWindow::showWholeInformation()
         QSqlQuery query = databaseManager->fetchSessionImages(selectedSessionId);
         while (query.next()) {
             QListWidgetItem *item = new QListWidgetItem;
-            QByteArray imageData = query.value("screenshot").toByteArray();
+            QByteArray imageData = query.value("document").toByteArray();
             QPixmap map;
             if (!map.loadFromData(imageData)) {
                 continue;
@@ -248,7 +248,7 @@ void DashboardWindow::showWholeInformation()
             QSqlQuery query = databaseManager->fetchReportImages(selectedSessionId);
             while (query.next()) {
                 QListWidgetItem *item = new QListWidgetItem;
-                QByteArray imageData = query.value("screenshot").toByteArray();
+                QByteArray imageData = query.value("document").toByteArray();
                 QPixmap map;
                 if (!map.loadFromData(imageData)) {
                     qDebug() << "Failed to load image data";

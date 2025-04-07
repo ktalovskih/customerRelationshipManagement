@@ -195,7 +195,7 @@ QString CRMDatabaseManager::getClientNameById(int cliId) {
     }
     return QString();
 }
-// Part 2 of CRMDatabaseManager.cpp
+
 
 QSqlQuery CRMDatabaseManager::fetchAllSessions(bool isAdmin, int userId) {
     QSqlQuery query;
@@ -348,7 +348,7 @@ bool CRMDatabaseManager::createReport(int sessionId, int empId, const QString& r
     }
     return true;
 }
-// Part 3 of CRMDatabaseManager.cpp
+
 
 void CRMDatabaseManager::uploadDocumentToDB(const QPixmap &pixmap, int index, bool isSessionDocument)
 {
