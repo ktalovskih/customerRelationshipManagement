@@ -1,36 +1,34 @@
-🧠 CRM System for Shift and Work Session Management
+CRM System for Shift and Work Session Management
 
 This is a desktop CRM application designed for managing work shifts, employee activity, and client interactions. It features two user roles: Admin and Employee. Built with Qt and C++, the app supports shift scheduling, real-time shift monitoring, report generation, and screenshot logging.
-🚀 Features
-👤 Admin Role:
+Features
 
-    Create and assign shifts to employees.
+Admin Role:
+Create and assign shifts to employees.
 
-    Set client, employee, shift time, and notes.
+Set client, employee, shift time, and notes.
 
-    Monitor active shifts in real time.
+Monitor active shifts in real time.
 
-    View compiled reports after shifts are finished.
+View compiled reports after shifts are finished.
 
-👷 Employee Role:
+Employee Role:
 
-    View assigned shifts.
+View assigned shifts.
 
-    Start and finish shifts.
+Start and finish shifts.
 
-    Add screenshots before or during work sessions.
+Add screenshots before or during work sessions.
 
-    Submit final shift reports.
+Submit final shift reports.
 
-🗂️ Technologies Used
+Technologies Used
 
-    C++ / Qt Framework
+C++ / Qt Framework
 
-    QSqlDatabase (SQLite or other backends)
+SQLite
 
-    Qt Widgets / UI Forms
-
-    QDateTime, QFileDialog, QImage handling for screenshots
+Qt Widgets / UI Forms
 
 📷 Screenshots
 
