@@ -285,7 +285,8 @@ void DashboardWindow::showWholeInformation()
     widget->setLayout(layout);
     widget->setMinimumSize(800, 600);
     widget->setAttribute(Qt::WA_DeleteOnClose);
-    layout->addWidget(editButton);
+    if(this->isAdmin)
+        layout->addWidget(editButton);
     widget->show();
 }
 

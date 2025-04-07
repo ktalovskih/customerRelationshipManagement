@@ -460,6 +460,11 @@ bool CRMDatabaseManager::addEmployee(const QString &username, const QString &pas
     }
 }
 
+bool CRMDatabaseManager::reorderAutoIncrement(const QString &tableName)
+{
+    return false;
+}
+
 std::string hashPassword(const std::string &password) {
     char hashedPassword[crypto_pwhash_STRBYTES];
 
@@ -472,50 +477,39 @@ std::string hashPassword(const std::string &password) {
     return std::string(hashedPassword);
 }
 
+bool executeQuery(QSqlQuery &query) {
+    if (!query.exec()) {
+        qDebug() << "Query failed:" << query.lastError();
+        return false;
+    }
+    return true;
+}
+
 bool CRMDatabaseManager::deleteCompletedSessionsAndReorder() {
     QSqlDatabase database = QSqlDatabase::database();
     if (!database.isOpen()) {
         qDebug() << "Database is not open.";
         return false;
     }
+
     database.transaction();
 
+    QSqlQuery deleteSessionDocsQuery;
+    deleteSessionDocsQuery.prepare("DELETE FROM session_documents WHERE session_id IN (SELECT session_id FROM work_sessions WHERE session_status = 'Completed')");
+    if (!executeQuery(deleteSessionDocsQuery)) return false;
+
+    
     QSqlQuery deleteDocumentsQuery;
-    deleteDocumentsQuery.prepare(
-        "DELETE FROM report_documents "
-        "WHERE report_id IN ("
-        "  SELECT report_id FROM reports "
-        "  WHERE session_id IN ("
-        "    SELECT session_id FROM work_sessions WHERE session_status = 'Completed'"
-        "  )"
-        ")"
-    );
-    if (!deleteDocumentsQuery.exec()) {
-        qDebug() << "Failed to delete report documents:" << deleteDocumentsQuery.lastError();
-        database.rollback();
-        return false;
-    }
+    deleteDocumentsQuery.prepare("DELETE FROM session_documents WHERE document_id IN (SELECT document_id FROM reports WHERE session_id IN (SELECT session_id FROM work_sessions WHERE session_status = 'Completed'))");
+    if (!executeQuery(deleteDocumentsQuery)) return false;
 
     QSqlQuery deleteReportsQuery;
-    deleteReportsQuery.prepare(
-        "DELETE FROM reports "
-        "WHERE session_id IN ("
-        "  SELECT session_id FROM work_sessions WHERE session_status = 'Completed'"
-        ")"
-    );
-    if (!deleteReportsQuery.exec()) {
-        qDebug() << "Failed to delete reports:" << deleteReportsQuery.lastError();
-        database.rollback();
-        return false;
-    }
+    deleteReportsQuery.prepare("DELETE FROM reports WHERE session_id IN (SELECT session_id FROM work_sessions WHERE session_status = 'Completed')");
+    if (!executeQuery(deleteReportsQuery)) return false;
 
     QSqlQuery deleteSessionsQuery;
     deleteSessionsQuery.prepare("DELETE FROM work_sessions WHERE session_status = 'Completed'");
-    if (!deleteSessionsQuery.exec()) {
-        qDebug() << "Failed to delete completed sessions:" << deleteSessionsQuery.lastError();
-        database.rollback();
-        return false;
-    }
+    if (!executeQuery(deleteSessionsQuery)) return false;
 
     if (!database.commit()) {
         qDebug() << "Failed to commit the transaction.";
@@ -529,56 +523,6 @@ bool CRMDatabaseManager::deleteCompletedSessionsAndReorder() {
         !reorderAutoIncrement("report_documents")) {
         return false;
     }
-    return true;
-}
 
-bool CRMDatabaseManager::reorderAutoIncrement(const QString &tableName) {
-    QSqlDatabase database = QSqlDatabase::database();
-    if (!database.isOpen()) {
-        qDebug() << "Database is not open.";
-        return false;
-    }
-    database.transaction();
-    QString tempTableName = tableName + "_temp";
-    QSqlQuery createTempTableQuery;
-    createTempTableQuery.prepare(QString("CREATE TABLE %1 AS SELECT * FROM %2 WHERE 1=0").arg(tempTableName, tableName));
-    if (!createTempTableQuery.exec()) {
-        qDebug() << "Failed to create temporary table:" << createTempTableQuery.lastError();
-        database.rollback();
-        return false;
-    }
-    QSqlQuery insertTempTableQuery;
-    insertTempTableQuery.prepare(QString("INSERT INTO %1 SELECT * FROM %2 ORDER BY id").arg(tempTableName, tableName));
-    if (!insertTempTableQuery.exec()) {
-        qDebug() << "Failed to copy rows to temporary table:" << insertTempTableQuery.lastError();
-        database.rollback();
-        return false;
-    }
-    QSqlQuery dropTableQuery;
-    dropTableQuery.prepare(QString("DROP TABLE %1").arg(tableName));
-    if (!dropTableQuery.exec()) {
-        qDebug() << "Failed to drop original table:" << dropTableQuery.lastError();
-        database.rollback();
-        return false;
-    }
-    QSqlQuery renameTableQuery;
-    renameTableQuery.prepare(QString("ALTER TABLE %1 RENAME TO %2").arg(tempTableName, tableName));
-    if (!renameTableQuery.exec()) {
-        qDebug() << "Failed to rename temporary table:" << renameTableQuery.lastError();
-        database.rollback();
-        return false;
-    }
-    QSqlQuery resetAutoIncrementQuery;
-    resetAutoIncrementQuery.prepare(QString("UPDATE sqlite_sequence SET seq = (SELECT MAX(id) FROM %1) WHERE name = '%1'").arg(tableName));
-    if (!resetAutoIncrementQuery.exec()) {
-        qDebug() << "Failed to reset auto-increment:" << resetAutoIncrementQuery.lastError();
-        database.rollback();
-        return false;
-    }
-    if (!database.commit()) {
-        qDebug() << "Failed to commit the reordering transaction.";
-        return false;
-    }
-    qDebug() << "Auto-increment values reordered successfully for table:" << tableName;
     return true;
 }

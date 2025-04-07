@@ -24,7 +24,7 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
         text += " completed";
         QMessageBox::information(this, "Timer", text);
         timer->stop();
-    });
+    });s
     
     this->setFocusPolicy(Qt::StrongFocus);
     QSqlQuery logsQuery = databaseManager->fetchSessionNotes(0, selectedSessionId);
@@ -40,13 +40,18 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
     containerWidget->setLayout(gridLayoutForImages);
     scrollArea->setWidget(containerWidget);
     scrollArea->setWidgetResizable(true);
-    
-    layout->addWidget(buttonDialogFile);
+
+    // Grouping buttons and scroll area into a horizontal layout
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    buttonLayout->addWidget(buttonDialogFile);
+    buttonLayout->addWidget(buttonUpload);
+
+    // Adding grouped buttons and other widgets to the main layout
+    layout->addLayout(buttonLayout);
     layout->addWidget(scrollArea);
-    layout->addWidget(buttonUpload);
     layout->addWidget(logText);
     this->setLayout(layout);
-    this->resize(600,400);
+    this->resize(600, 400);
     
     QObject::connect(buttonDialogFile, &QPushButton::clicked, [this]() {
         QFileDialog dialog;
@@ -95,11 +100,24 @@ SessionDetailWidget::SessionDetailWidget(QWidget* parent, int _selectedSessionId
 void SessionDetailWidget::endSession(int employeeId)
 {
     bool stoppedManually = false; 
-    layout->addWidget(totalEarnings);   
-    layout->addWidget(information);  
+
+    // Create a group box for better visual grouping of input fields
+    QGroupBox* inputGroupBox = new QGroupBox("Session Details", this);
+    QVBoxLayout* inputGroupLayout = new QVBoxLayout(inputGroupBox);
+
+    // Add input fields to the group box
+    inputGroupLayout->addWidget(totalEarnings);
+    inputGroupLayout->addWidget(information);
+    inputGroupBox->setLayout(inputGroupLayout);
+
+    // Configure input fields
     information->show();
     totalEarnings->show();
     totalEarnings->setPlaceholderText("Enter total earnings");
+    information->setPlaceholderText("Enter session notes");
+
+    // Add the group box to the main layout
+    layout->addWidget(inputGroupBox);
     this->show();  
 
     if (timer->isActive()) {
@@ -108,7 +126,21 @@ void SessionDetailWidget::endSession(int employeeId)
     }
     
     disconnect(buttonUpload, nullptr, nullptr, nullptr);
-    
+
+    // Create a horizontal layout for buttons
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* cancelButton = new QPushButton("Cancel", this);
+    buttonLayout->addWidget(cancelButton);
+    buttonLayout->addWidget(buttonUpload);
+
+    // Add the button layout to the main layout
+    layout->addLayout(buttonLayout);
+
+    // Connect cancel button to close the session
+    QObject::connect(cancelButton, &QPushButton::clicked, [this]() {
+        this->close();
+    });
+
     QObject::connect(buttonUpload, &QPushButton::clicked, [this, employeeId, stoppedManually]() {
         QString reportText = information->text();
         QString totalEarningsText = totalEarnings->text();  

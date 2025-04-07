@@ -22,6 +22,7 @@
 #include <QScrollArea>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QGroupBox>
 #pragma once
 
 class SessionDetailWidget : public QWidget {
