@@ -40,24 +40,23 @@ This is a desktop CRM application built with **C++** and the **Qt Framework** de
 
 ### Screenshots
 
-#### **Admin Dashboard - Shift Overview**
+
 ![Admin Dashboard](https://github.com/user-attachments/assets/bf49c3d9-4c10-4dba-a9d9-ea68ecdb28ca)
 
-#### **Employee Shift View**
+
 ![Employee Shift View](https://github.com/user-attachments/assets/497a35c4-31a3-4ed2-8f6a-4b2ef6d3e9e0)
 
-#### **Shift Start Screen (Employee)**
+
 ![Shift Start Screen](https://github.com/user-attachments/assets/04ca20db-1f33-424e-940c-271ecf7f519e)
 
-#### **Shift Completed - Report Generation (Admin)**
+
 ![Shift Completed](https://github.com/user-attachments/assets/24bd48c0-082f-49c1-9f8a-98823b1aeb24)
 
-#### **Employee Screenshots Before/After Shift**
 ![Employee Screenshot Before Shift](https://github.com/user-attachments/assets/9f69ef22-4798-448d-a67f-e1873dab1fee)
 
 ![Employee Screenshot After Shift](https://github.com/user-attachments/assets/056f2dd1-4fa1-4fa5-b92d-44388ff20dfe)
 
----
+
 
 ### Installation
 
@@ -81,8 +80,3 @@ This is a desktop CRM application built with **C++** and the **Qt Framework** de
 - **Client Feedback System**: Allow clients to provide feedback on employee performance.
 - **Detailed Analytics**: Add functionality for admins to generate reports based on performance, shift data, and client satisfaction.
 
----
-
-This updated version adds some structure, better readability, and a few additional features to highlight. I also suggest that you replace placeholders like the screenshot links with actual images from your project. This will give a complete, polished look to the README.
-
-Let me know if you'd like further revisions or additions!
